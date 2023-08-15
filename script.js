@@ -30,7 +30,7 @@ export async function script(
   try {
     // skip archived repos
     if (repository.archived) {
-      octokit.log.info(`${repository.full_name} is archived, skipping.`);
+      octokit.log.debug(`${repository.full_name} is archived, skipping.`);
       return;
     }
 
@@ -68,7 +68,7 @@ export async function script(
     }
 
     if (versions.length < 1) {
-      octokit.log.error(`${repository.full_name} does not have ${library} in ${path}`);
+      octokit.log.debug(`${repository.full_name} does not have ${library} in ${path}`);
       return;
     }
 
