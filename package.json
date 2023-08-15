@@ -1,0 +1,33 @@
+{
+  "name": "@time-loop/octoherd-script-renovate-library-major-version-driver",
+  "version": "0.0.0-development",
+  "type": "module",
+  "exports": "./script.js",
+  "bin": {
+    "octoherd-script-renovate-library-major-version-driver": "./cli.js"
+  },
+  "description": "Support for Renovate major version library PRs",
+  "scripts": {
+    "start": "node cli.js",
+    "test": "node script.js"
+  },
+  "repository": "github:octoherd/octoherd-script-renovate-library-major-version-driver",
+  "keywords": [
+    "octoherd-script"
+  ],
+  "author": "Andrew Hammond",
+  "license": "ISC",
+  "dependencies": {
+    "@octoherd/cli": "^4.0.0",
+    "@yarnpkg/lockfile": "^1.1.0",
+    "semver": "^7.5.4"
+  },
+  "release": {
+    "branches": [
+      "main"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
