@@ -1,8 +1,8 @@
-# octoherd-script-renovate-library-major-version-driver
+# octoherd-script-library-query
 
 <!-- [![@latest](https://img.shields.io/npm/v/@octoherd/script-hello-world.svg)](https://www.npmjs.com/package/@octoherd/script-hello-world) -->
 
-[![Build Status](https://github.com/time-loop/octoherd-script-renovate-library-major-version-driver/workflows/Test/badge.svg)](https://github.com/time-loop/octoherd-script-renovate-library-major-version-driver/actions?query=workflow%3ATest+branch%3Amain)
+[![Build Status](https://github.com/time-loop/octoherd-script-library-query/workflows/Test/badge.svg)](https://github.com/time-loop/octoherd-script-library-query/actions?query=workflow%3ATest+branch%3Amain)
 
 ## Usage
 
