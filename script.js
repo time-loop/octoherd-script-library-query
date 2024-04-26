@@ -11,11 +11,12 @@ import lockfile from '@yarnpkg/lockfile';
  * @param {object} options
  * @param {string} [options.versionRequirement] the version requirement, for example `^12` See https://www.npmjs.com/package/semver
  * @param {string} [options.library] full name of library to be updated via renovate, for example @time-loop/cdk-library. Ignored when doing an `all non-major updates`.
+ * @param {string} [options.reduce] how to reduce the list of versions, for example `max` or `min`
  */
 export async function script(
   octokit,
   repository,
-  { versionRequirement: versionRequirement, library = '@time-loop/cdk-library' }
+  { versionRequirement, reduce, library = '@time-loop/cdk-library' }
 ) {
   if (!versionRequirement) {
     throw new Error('--minVersion is required, example 11.1.2');
@@ -65,11 +66,23 @@ export async function script(
       if (nameOnly !== library) continue;
       const details = yarnLock.object[packageName];
       versions.push(details.version);
+      // octokit.log.warn(`packageName: ${packageName}, version: ${details.version}`);
     }
 
     if (versions.length < 1) {
       octokit.log.debug(`${repository.full_name} does not have ${library} in ${path}`);
       return;
+    }
+
+    switch (reduce) {
+      case 'min':
+        const smallest = versions.reduce((prev, current) => Semver.compare(prev, current) === -1 ? prev : current, '99999999.0.0');
+        versions = [smallest];
+        break;
+      case 'max':
+        const largest = versions.reduce((prev, current) => Semver.compare(prev, current) === 1 ? prev : current, '0.0.0');
+        versions = [largest];
+        break;
     }
 
     versions.map((v) => {
