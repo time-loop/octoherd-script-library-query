@@ -2,6 +2,10 @@
 
 import * as Semver from 'semver';
 import lockfile from '@yarnpkg/lockfile';
+import { parse as yamlParse } from 'yaml';
+
+const pnpmLockPath = 'pnpm-lock.yaml';
+const yarnPath = 'yarn.lock';
 
 /**
  * Drive renovate's major library update process.
@@ -35,64 +39,132 @@ export async function script(
       return;
     }
 
-    const path = 'yarn.lock';
-    const { data: file } = await octokit.request(
-      'GET /repos/{owner}/{repo}/contents/{path}',
-      { ...baseParams, path },
-    );
-
-    if (!file) {
-      octokit.log.error(`Missing ${path}, quitting.`);
-      return;
-    }
-
-    if (file.type !== 'file') {
-      octokit.log.error(`${path} is a ${file.type}, quitting.`);
-      return;
-    }
-
-    // Parse out the contents
-    const buffer = Buffer.from(file.content, 'base64').toString('ascii');
-    const yarnLock = lockfile.parse(buffer);
-
-    if (yarnLock.type !== 'success') {
-      octokit.log.error(`parsing ${path} did not succeed: ${yarnLock.type}`);
-      return;
-    }
-
     let versions = [];
-    for (const packageName in yarnLock.object) {
-      const nameOnly = packageName.match(/^(@?[a-z0-9-]+\/?[a-z0-9-]+)@/i)?.[1];
-      if (nameOnly !== library) continue;
-      const details = yarnLock.object[packageName];
-      versions.push(details.version);
-      // octokit.log.warn(`packageName: ${packageName}, version: ${details.version}`);
+    let lockfilePath = undefined;
+    // Look for a pnpm-lock.yaml file first
+    try {
+      octokit.log.debug('Looking for pnpm-lock.yaml...');
+      const { data: pnpmFile } = await octokit.request(
+        'GET /repos/{owner}/{repo}/contents/{path}',
+        { ...baseParams, path: pnpmLockPath }
+      );
+      octokit.log.debug(`Found ${pnpmLockPath}, parsing...`);
+      lockfilePath = pnpmLockPath;
+      if (pnpmFile.type !== 'file') {
+        octokit.log.error(`${pnpmLockPath} is a ${pnpmFile.type}, quitting.`);
+        return;
+      }
+
+      const pnpmBuffer = Buffer.from(pnpmFile.content, 'base64').toString(
+        'ascii'
+      );
+      const pnpmLock = yamlParse(pnpmBuffer);
+      if (typeof pnpmLock !== 'object' || !pnpmLock.packages) {
+        octokit.log.error(`parsing ${pnpmLockPath} did not succeed`);
+        return;
+      }
+
+      for (const dependencyPath of Object.keys(pnpmLock.packages)) {
+        // Format is /thePackageName@1.0.0(stuff)(more stuff)
+        // Examples:
+        //   /has-proto@1.0.3
+        //   /@babel/generator@7.24.5
+        //   /jest@29.7.0(@types/node@18.19.33)(ts-node@10.9.2)
+        //   /@aws-sdk/client-sso-oidc@3.572.0(@aws-sdk/client-sts@3.572.0)
+        const { packageName, version } =
+          dependencyPath.match(
+            /^(?<packageName>(@[^\/]+\/)?[^@]+)@(?<version>[0-9]+\.[0-9]+\.[0-9]+).*/
+          )?.groups ?? {};
+        if (packageName !== library) continue;
+        versions.push(version);
+      }
+    } catch (e) {
+      octokit.log.debug(`Missing ${pnpmLockPath}, maybe there's a yarn.lock?`);
+    }
+
+    if (!lockfilePath) {
+      try {
+        const { data: yarnFile } = await octokit.request(
+          'GET /repos/{owner}/{repo}/contents/{path}',
+          { ...baseParams, path: yarnPath }
+        );
+        octokit.log.debug(`Found ${yarnPath}, parsing...`);
+        lockfilePath = yarnPath;
+
+        if (yarnFile.type !== 'file') {
+          octokit.log.error(`${yarnPath} is a ${yarnFile.type}, quitting.`);
+          return;
+        }
+
+        // Parse out the contents
+        const buffer = Buffer.from(yarnFile.content, 'base64').toString('ascii');
+        const yarnLock = lockfile.parse(buffer);
+
+        if (yarnLock.type !== 'success') {
+          octokit.log.error(
+            `parsing ${yarnPath} did not succeed: ${yarnLock.type}`
+          );
+          return;
+        }
+
+        for (const packageName in yarnLock.object) {
+          const nameOnly = packageName.match(
+            /^(@?[a-z0-9-]+\/?[a-z0-9-]+)@/i
+          )?.[1];
+          if (nameOnly !== library) continue;
+          const details = yarnLock.object[packageName];
+          versions.push(details.version);
+          // octokit.log.warn(`packageName: ${packageName}, version: ${details.version}`);
+        }
+      } catch (e) {
+        octokit.log.warn(`Missing ${yarnPath}, quitting.`);
+        return;
+      }
     }
 
     if (versions.length < 1) {
-      octokit.log.debug(`${repository.full_name} does not have ${library} in ${path}`);
+      octokit.log.debug(
+        `${repository.full_name} does not have ${library} in ${lockfilePath}`
+      );
       return;
     }
+    octokit.log.debug(
+      `${repository.full_name} has ${library} in ${lockfilePath} at version(s) ${JSON.stringify(
+        versions
+      )}, reducing to ${reduce}`
+    );
 
     switch (reduce) {
       case 'min':
-        const smallest = versions.reduce((prev, current) => Semver.compare(prev, current) === -1 ? prev : current, '99999999.0.0');
+        const smallest = versions.reduce(
+          (prev, current) =>
+            Semver.compare(prev, current) === -1 ? prev : current,
+          '99999999.0.0'
+        );
         versions = [smallest];
         break;
       case 'max':
-        const largest = versions.reduce((prev, current) => Semver.compare(prev, current) === 1 ? prev : current, '0.0.0');
+        const largest = versions.reduce(
+          (prev, current) =>
+            Semver.compare(prev, current) === 1 ? prev : current,
+          '0.0.0'
+        );
         versions = [largest];
         break;
     }
 
     versions.map((v) => {
       if (Semver.satisfies(v, versionRequirement)) {
-        octokit.log.info(`${repository.full_name} library ${library} at version ${v} satisfies ${versionRequirement}`);
+        octokit.log.info(
+          `${repository.full_name} library ${library} at version ${v} satisfies ${versionRequirement}`
+        );
       } else {
-        octokit.log.warn(`${repository.full_name} library ${library} at version ${v} DOES NOT satisfy ${versionRequirement}`);
+        octokit.log.warn(
+          `${repository.full_name} library ${library} at version ${v} DOES NOT satisfy ${versionRequirement}`
+        );
       }
     });
- } catch (e) {
+  } catch (e) {
     octokit.log.error(e);
   }
 }
