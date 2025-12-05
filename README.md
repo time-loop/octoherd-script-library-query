@@ -13,7 +13,8 @@ node cli.js \
   -T ghp_0123456789abcdefghijABCDEFGHIJabcdefgh \
   --octoherd-bypass-confirms true \
   --library @time-loop/cdk-ecs-fargate \
-  --versionRequirement \>=5.15.2
+  --versionRequirement \>=5.15.2 | \
+tee raw.txt | grep NOT | sort | tee non-compliant.txt && wc -l non-compliant.txt
 ```
 
 ## Options

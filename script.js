@@ -55,6 +55,7 @@ export async function script(
         return;
       }
 
+      // @ts-ignore - Buffer is available in Node.js
       const pnpmBuffer = Buffer.from(pnpmFile.content, 'base64').toString(
         'ascii'
       );
@@ -97,6 +98,7 @@ export async function script(
         }
 
         // Parse out the contents
+        // @ts-ignore - Buffer is available in Node.js
         const buffer = Buffer.from(yarnFile.content, 'base64').toString('ascii');
         const yarnLock = lockfile.parse(buffer);
 
