@@ -9,7 +9,8 @@
   "description": "Support for Renovate major version library PRs",
   "scripts": {
     "start": "node cli.js",
-    "test": "node script.js"
+    "test": "vitest",
+    "test:ui": "vitest --ui"
   },
   "repository": "github:octoherd/octoherd-script-renovate-library-major-version-driver",
   "keywords": [
@@ -33,5 +34,8 @@
   },
   "engines": {
     "node": ">= 18.17.1"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.15"
   }
 }
