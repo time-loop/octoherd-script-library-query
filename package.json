@@ -1,41 +1,45 @@
 {
-  "name": "@time-loop/octoherd-script-renovate-library-major-version-driver",
-  "version": "0.0.0-development",
-  "type": "module",
-  "exports": "./script.js",
-  "bin": {
-    "octoherd-script-renovate-library-major-version-driver": "./cli.js"
-  },
-  "description": "Support for Renovate major version library PRs",
-  "scripts": {
-    "start": "node cli.js",
-    "test": "vitest",
-    "test:ui": "vitest --ui"
-  },
-  "repository": "github:octoherd/octoherd-script-renovate-library-major-version-driver",
-  "keywords": [
-    "octoherd-script"
-  ],
-  "author": "Andrew Hammond",
-  "license": "ISC",
-  "dependencies": {
-    "@octoherd/cli": "^4.0.5",
-    "@yarnpkg/lockfile": "^1.1.0",
-    "semver": "^7.5.4",
-    "yaml": "^2.4.2"
-  },
-  "release": {
-    "branches": [
-      "main"
-    ]
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "engines": {
-    "node": ">= 18.17.1"
-  },
-  "devDependencies": {
-    "vitest": "^4.0.15"
-  }
+	"name": "@time-loop/octoherd-script-renovate-library-major-version-driver",
+	"version": "0.0.0-development",
+	"type": "module",
+	"exports": "./script.js",
+	"bin": {
+		"octoherd-script-renovate-library-major-version-driver": "./cli.js"
+	},
+	"description": "Support for Renovate major version library PRs",
+	"scripts": {
+		"start": "node cli.js",
+		"test": "vitest",
+		"test:ui": "vitest --ui",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"format": "biome format --write ."
+	},
+	"repository": "github:octoherd/octoherd-script-renovate-library-major-version-driver",
+	"keywords": [
+		"octoherd-script"
+	],
+	"author": "Andrew Hammond",
+	"license": "ISC",
+	"dependencies": {
+		"@octoherd/cli": "^4.0.5",
+		"@yarnpkg/lockfile": "^1.1.0",
+		"semver": "^7.5.4",
+		"yaml": "^2.4.2"
+	},
+	"release": {
+		"branches": [
+			"main"
+		]
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"engines": {
+		"node": ">= 18.17.1"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.8",
+		"vitest": "^4.0.15"
+	}
 }
