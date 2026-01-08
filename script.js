@@ -150,24 +150,49 @@ export async function script(
 				"ascii",
 			);
 			const pnpmLock = yamlParse(pnpmBuffer);
-			if (typeof pnpmLock !== "object" || !pnpmLock.packages) {
+			if (typeof pnpmLock !== "object") {
 				octokit.log.error(`parsing ${pnpmLockPath} did not succeed`);
 				return;
 			}
 
-			for (const dependencyPath of Object.keys(pnpmLock.packages)) {
-				// Format is /thePackageName@1.0.0(stuff)(more stuff)
-				// Examples:
-				//   /has-proto@1.0.3
-				//   /@babel/generator@7.24.5
-				//   /jest@29.7.0(@types/node@18.19.33)(ts-node@10.9.2)
-				//   /@aws-sdk/client-sso-oidc@3.572.0(@aws-sdk/client-sts@3.572.0)
-				const { packageName, version } =
-					dependencyPath.match(
-						/^(?<packageName>(@[^/]+\/)?[^@]+)@(?<version>[0-9]+\.[0-9]+\.[0-9]+).*/,
-					)?.groups ?? {};
-				if (packageName !== library) continue;
-				versions.push(version);
+			// Check importers section first (workspace dependencies in pnpm v9)
+			if (pnpmLock.importers) {
+				for (const importerPath of Object.keys(pnpmLock.importers)) {
+					const importer = pnpmLock.importers[importerPath];
+					// Check both dependencies and devDependencies
+					for (const depSection of [
+						importer.dependencies,
+						importer.devDependencies,
+					]) {
+						if (!depSection) continue;
+						if (depSection[library]) {
+							const version = depSection[library].version;
+							// Extract the version number (before the first parenthesis if present)
+							const versionMatch = version.match(/^([0-9]+\.[0-9]+\.[0-9]+)/);
+							if (versionMatch) {
+								versions.push(versionMatch[1]);
+							}
+						}
+					}
+				}
+			}
+
+			// Also check packages section (transitive dependencies)
+			if (pnpmLock.packages) {
+				for (const dependencyPath of Object.keys(pnpmLock.packages)) {
+					// Format is /thePackageName@1.0.0(stuff)(more stuff)
+					// Examples:
+					//   /has-proto@1.0.3
+					//   /@babel/generator@7.24.5
+					//   /jest@29.7.0(@types/node@18.19.33)(ts-node@10.9.2)
+					//   /@aws-sdk/client-sso-oidc@3.572.0(@aws-sdk/client-sts@3.572.0)
+					const { packageName, version } =
+						dependencyPath.match(
+							/^\/(?<packageName>(?:@[^/]+\/)?[^@]+)@(?<version>[0-9]+\.[0-9]+\.[0-9]+).*/,
+						)?.groups ?? {};
+					if (packageName !== library) continue;
+					versions.push(version);
+				}
 			}
 		} catch (_e) {
 			octokit.log.debug(`Missing ${pnpmLockPath}, maybe there's a yarn.lock?`);

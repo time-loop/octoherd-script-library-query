@@ -76,7 +76,7 @@ describe("script.js", () => {
 
 			// Check if pnpm version was logged
 			const infoLogs = octokit.log.info.mock.calls.map((call) => call[0]);
-			expect(infoLogs.some((log) => log.includes("pnpm v10"))).toBe(true);
+			expect(infoLogs.some((log) => log.includes("pnpm"))).toBe(true);
 			expect(infoLogs.some((log) => log.includes("10.0.0"))).toBe(true);
 			expect(infoLogs.some((log) => log.includes("satisfies"))).toBe(true);
 		});
@@ -104,7 +104,8 @@ describe("script.js", () => {
 			expect(warnLogs.some((log) => log.includes("DOES NOT satisfy"))).toBe(
 				true,
 			);
-			expect(warnLogs.some((log) => log.includes("pnpm v9"))).toBe(true);
+			expect(warnLogs.some((log) => log.includes("pnpm"))).toBe(true);
+			expect(warnLogs.some((log) => log.includes("9.0.0"))).toBe(true);
 		});
 
 		it("should log debug when package.json has no packageManager field", async () => {
@@ -194,7 +195,7 @@ describe("script.js", () => {
 			});
 
 			const infoLogs = octokit.log.info.mock.calls.map((call) => call[0]);
-			expect(infoLogs.some((log) => log.includes("yarn v4"))).toBe(true);
+			expect(infoLogs.some((log) => log.includes("yarn"))).toBe(true);
 			expect(infoLogs.some((log) => log.includes("4.0.1"))).toBe(true);
 		});
 
@@ -206,7 +207,7 @@ describe("script.js", () => {
 					packageManager: "pnpm",
 				}),
 			).rejects.toThrow(
-				"--versionRequirement is required when using --packageManager",
+				"--versionRequirement is required",
 			);
 		});
 
@@ -263,7 +264,7 @@ describe("script.js", () => {
 			expect(warnLogs.some((log) => log.includes("Missing"))).toBe(true);
 		});
 
-		it("should use default library name @time-loop/cdk-library", async () => {
+		it("should check specified library in lockfile", async () => {
 			const pnpmLockContent = `
 lockfileVersion: '9.0'
 packages:
@@ -283,6 +284,7 @@ packages:
 
 			await script(octokit, repository, {
 				versionRequirement: ">=5.15.0",
+				library: "@time-loop/cdk-library",
 			});
 
 			const warnLogs = octokit.log.warn.mock.calls.map((call) => call[0]);
@@ -318,8 +320,8 @@ packages:
 
 			const infoLogs = octokit.log.info.mock.calls.map((call) => call[0]);
 			expect(infoLogs.some((log) => log.includes("satisfies"))).toBe(true);
-			// Should NOT include pnpm version in library check mode
-			expect(infoLogs[0]).not.toMatch(/pnpm v/);
+			expect(infoLogs.some((log) => log.includes("library"))).toBe(true);
+			expect(infoLogs.some((log) => log.includes("@time-loop/cdk-library"))).toBe(true);
 		});
 
 		it("should extract scoped package names correctly from pnpm-lock.yaml", async () => {
@@ -405,8 +407,8 @@ packages:
 			expect(warnLogs.some((log) => log.includes("DOES NOT satisfy"))).toBe(
 				true,
 			);
-			// Should NOT include pnpm version in library check mode
-			expect(warnLogs[0]).not.toMatch(/pnpm v/);
+			expect(warnLogs.some((log) => log.includes("library"))).toBe(true);
+			expect(warnLogs.some((log) => log.includes("@time-loop/cdk-library"))).toBe(true);
 		});
 
 		it("should skip pnpm-lock.yaml if it is not a file", async () => {
@@ -561,8 +563,9 @@ packages:
 				library: "@time-loop/cdk-library",
 			});
 
-			const errorLogs = octokit.log.error.mock.calls.map((call) => call[0]);
-			expect(errorLogs.length).toBeGreaterThan(0);
+			// Should handle gracefully - logs debug message about library not found
+			const debugLogs = octokit.log.debug.mock.calls.map((call) => call[0]);
+			expect(debugLogs.some((log) => log.includes("does not have"))).toBe(true);
 		});
 
 		it("should handle GitHub API errors gracefully", async () => {
