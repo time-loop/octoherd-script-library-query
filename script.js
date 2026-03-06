@@ -109,14 +109,15 @@ export async function script(
 				baseParams,
 				packageManager,
 			);
+			const repoUrl = repository.html_url || `https://github.com/${repository.full_name}`;
 			if (version) {
 				if (Semver.satisfies(version, versionRequirement)) {
 					octokit.log.info(
-						`${repository.full_name} ${packageManager} ${version} satisfies ${versionRequirement}`,
+						`${packageManager} at ${version} satisfies ${versionRequirement} in ${repoUrl}`,
 					);
 				} else {
 					octokit.log.warn(
-						`${repository.full_name} ${packageManager} ${version} DOES NOT satisfy ${versionRequirement}`,
+						`${packageManager} at ${version} DOES NOT satisfy ${versionRequirement} in ${repoUrl}`,
 					);
 				}
 			} else {
@@ -274,14 +275,15 @@ export async function script(
 			}
 		}
 
+		const repoUrl = repository.html_url || `https://github.com/${repository.full_name}`;
 		versions.forEach((v) => {
 			if (Semver.satisfies(v, versionRequirement)) {
 				octokit.log.info(
-					`${repository.full_name} library ${library} at version ${v} satisfies ${versionRequirement}`,
+					`${library} at ${v} satisfies ${versionRequirement} in ${repoUrl}`,
 				);
 			} else {
 				octokit.log.warn(
-					`${repository.full_name} library ${library} at version ${v} DOES NOT satisfy ${versionRequirement}`,
+					`${library} at ${v} DOES NOT satisfy ${versionRequirement} in ${repoUrl}`,
 				);
 			}
 		});

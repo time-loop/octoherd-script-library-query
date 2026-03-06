@@ -673,7 +673,7 @@ packages:
 	});
 
 	describe("repository information in output", () => {
-		it("should include repository name in log output", async () => {
+		it("should include repository URL in log output", async () => {
 			const pnpmLockContent = `
 lockfileVersion: '9.0'
 packages:
@@ -696,7 +696,7 @@ packages:
 			});
 
 			const infoLogs = octokit.log.info.mock.calls.map((call) => call[0]);
-			expect(infoLogs.some((log) => log.includes("my-org/my-repo"))).toBe(true);
+			expect(infoLogs.some((log) => log.includes("https://github.com/my-org/my-repo"))).toBe(true);
 		});
 
 		it("should include library name in log output", async () => {
